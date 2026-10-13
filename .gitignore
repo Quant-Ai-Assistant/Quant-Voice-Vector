@@ -1,0 +1,21 @@
+# Biometric data and audio never go into the repository
+*.qvoice.json
+*.wav
+*.mp3
+*.m4a
+*.ogg
+*.opus
+*.webm
+*.flac
+
+# Downloaded models and test recordings
+/models/
+/samples/
+
+node_modules/
+target/
+dist/
+.DS_Store
+/app/gen/
+/.claude/
+/.idea/

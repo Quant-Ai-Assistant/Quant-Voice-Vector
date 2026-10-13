@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quant Voice Vector</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <svg hidden>
+      <symbol id="icon-mic" viewBox="0 0 24 24">
+        <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
+        <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </symbol>
+      <symbol id="icon-stop" viewBox="0 0 24 24">
+        <rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" />
+      </symbol>
+    </svg>
+
+    <aside>
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 500 500" aria-hidden="true">
+          <rect class="mark-body" x="170" y="62" width="160" height="262" rx="80" />
+          <rect class="mark-eye" x="204" y="150" width="32" height="76" rx="16" />
+          <rect class="mark-eye" x="264" y="150" width="32" height="76" rx="16" />
+          <path class="mark-line" d="M122 250A128 128 0 0 0 378 250M250 380V432M196 432H304" />
+        </svg>
+        <span>Quant Voice Vector</span>
+      </div>
+      <nav id="profiles"></nav>
+      <button id="new-profile" class="add">+ <span data-i18n="newProfile"></span></button>
+      <div class="lang" role="group" aria-label="Language">
+        <button data-lang="ru">Русский</button>
+        <button data-lang="en">English</button>
+      </div>
+    </aside>
+
+    <main>
+      <section id="view-empty" class="view center">
+        <button id="empty-create" class="plus" aria-labelledby="empty-label">+</button>
+        <p id="empty-label" class="plus-label" data-i18n="createProfile"></p>
+      </section>
+
+      <section id="view-draft" class="view" hidden>
+        <div class="top">
+          <span data-i18n="readAloud"></span>
+          <span id="draft-progress"></span>
+        </div>
+        <div class="bar"><div id="draft-bar"></div></div>
+
+        <div class="karaoke" aria-live="off">
+          <p id="k-prev" class="k-side"></p>
+          <p id="k-cur" class="k-cur"></p>
+          <p id="k-next" class="k-side"></p>
+        </div>
+
+        <div class="stage">
+          <div id="draft-wave-l" class="wave"></div>
+          <button id="draft-mic" class="mic" aria-label="Microphone">
+            <svg class="i-mic"><use href="#icon-mic" /></svg>
+            <svg class="i-stop"><use href="#icon-stop" /></svg>
+          </button>
+          <div id="draft-wave-r" class="wave"></div>
+        </div>
+        <p id="draft-hint" class="hint"></p>
+
+        <div class="row">
+          <span class="muted" data-i18n="or"></span>
+          <button id="draft-files" data-i18n="uploadFiles"></button>
+          <button id="draft-finish" class="primary" data-i18n="saveProfile" hidden></button>
+        </div>
+        <div class="links">
+          <button id="draft-reset" class="link" data-i18n="reset"></button>
+          <button id="draft-delete" class="link" data-i18n="delete"></button>
+        </div>
+      </section>
+
+      <section id="view-ready" class="view" hidden>
+        <h1 id="ready-name"></h1>
+        <p id="ready-meta" class="muted"></p>
+        <div class="row left">
+          <button id="ready-export" class="primary" data-i18n="export"></button>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="verifyTitle"></h2>
+          <p class="muted" data-i18n="verifyHint"></p>
+          <div class="stage">
+            <div id="ready-wave-l" class="wave"></div>
+            <button id="ready-mic" class="mic" aria-label="Microphone">
+              <svg class="i-mic"><use href="#icon-mic" /></svg>
+              <svg class="i-stop"><use href="#icon-stop" /></svg>
+            </button>
+            <div id="ready-wave-r" class="wave"></div>
+          </div>
+          <p id="ready-hint" class="hint"></p>
+          <div class="row">
+            <span class="muted" data-i18n="or"></span>
+            <button id="ready-file" data-i18n="verifyFile"></button>
+          </div>
+          <p id="ready-result" class="result" hidden></p>
+        </div>
+
+        <p class="muted small" data-i18n="privacy"></p>
+        <div class="links">
+          <button id="ready-delete" class="link" data-i18n="delete"></button>
+        </div>
+      </section>
+
+      <p id="message" class="message" hidden></p>
+    </main>
+
+    <script src="texts.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

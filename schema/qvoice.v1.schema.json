@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Quant-Ai-Assistant/Quant-Voice-Vector/blob/main/schema/qvoice.v1.schema.json",
+  "title": "Quant voiceprint file (.qvoice.json), version 1",
+  "description": "Voice profile produced by Quant-Voice-Vector and consumed by Quant-Core. The schema cannot express two rules that readers must check themselves: every vector (centroid and each embeddings[].vector) has exactly model.dim numbers, and every vector has unit L2 length.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "profile", "model", "normalized", "centroid", "embeddings"],
+  "properties": {
+    "format": { "const": "quant-voiceprint" },
+    "version": { "const": 1 },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "createdAt"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256", "dim", "sampleRate"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "description": "SHA-256 of the ONNX model file, lowercase hex.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "dim": { "type": "integer", "minimum": 1 },
+        "sampleRate": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "normalized": {
+      "description": "Vectors are L2-normalized; compare with cosine similarity.",
+      "const": true
+    },
+    "centroid": { "$ref": "#/$defs/vector" },
+    "embeddings": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["vector", "speechSeconds", "source"],
+        "properties": {
+          "vector": { "$ref": "#/$defs/vector" },
+          "speechSeconds": { "type": "number", "exclusiveMinimum": 0 },
+          "source": { "enum": ["microphone", "file"] }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "vector": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "number", "minimum": -1, "maximum": 1 }
+    }
+  }
+}
