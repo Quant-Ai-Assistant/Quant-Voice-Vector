@@ -7,8 +7,8 @@ use sherpa_onnx::LinearResampler;
 use symphonia::core::codecs::CodecParameters;
 use symphonia::core::codecs::registry::CodecRegistry;
 use symphonia::core::errors::Error as SymphoniaError;
-use symphonia::core::formats::probe::Hint;
 use symphonia::core::formats::TrackType;
+use symphonia::core::formats::probe::Hint;
 use symphonia::core::io::MediaSourceStream;
 use symphonia_adapter_libopus::OpusDecoder;
 
@@ -27,8 +27,10 @@ pub fn interleaved_to_16k(samples: &[f32], channels: usize, rate: u32) -> Vec<f3
 }
 
 fn decode_mono(path: &Path) -> Result<(Vec<f32>, u32)> {
-    let file = std::fs::File::open(path)
-        .map_err(|source| Error::Io { path: path.to_path_buf(), source })?;
+    let file = std::fs::File::open(path).map_err(|source| Error::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
     let stream = MediaSourceStream::new(Box::new(file), Default::default());
     let mut hint = Hint::new();
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
@@ -39,7 +41,9 @@ fn decode_mono(path: &Path) -> Result<(Vec<f32>, u32)> {
     let mut reader = symphonia::default::get_probe()
         .probe(&hint, stream, Default::default(), Default::default())
         .map_err(decode)?;
-    let track = reader.default_track(TrackType::Audio).ok_or(Error::NoAudioTrack)?;
+    let track = reader
+        .default_track(TrackType::Audio)
+        .ok_or(Error::NoAudioTrack)?;
     let track_id = track.id;
     let Some(CodecParameters::Audio(params)) = track.codec_params.clone() else {
         return Err(Error::NoAudioTrack);
@@ -48,7 +52,9 @@ fn decode_mono(path: &Path) -> Result<(Vec<f32>, u32)> {
     let mut codecs = CodecRegistry::new();
     symphonia::default::register_enabled_codecs(&mut codecs);
     codecs.register_audio_decoder::<OpusDecoder>();
-    let mut decoder = codecs.make_audio_decoder(&params, &Default::default()).map_err(decode)?;
+    let mut decoder = codecs
+        .make_audio_decoder(&params, &Default::default())
+        .map_err(decode)?;
 
     let mut mono = Vec::new();
     let mut interleaved: Vec<f32> = Vec::new();

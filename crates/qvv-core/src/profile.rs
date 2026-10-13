@@ -120,7 +120,10 @@ impl ProfileBuilder {
     pub fn build(&self, name: &str) -> Result<VoiceprintFile> {
         let accepted = self.accepted();
         if accepted.len() < MIN_EMBEDDINGS {
-            return Err(Error::NotEnoughSpeech { have: accepted.len(), need: MIN_EMBEDDINGS });
+            return Err(Error::NotEnoughSpeech {
+                have: accepted.len(),
+                need: MIN_EMBEDDINGS,
+            });
         }
         // Too many segments: keep an evenly spread subset so every recording is represented.
         let kept: Vec<Sample> = if accepted.len() > MAX_EMBEDDINGS {
@@ -204,4 +207,84 @@ fn centroid<'a>(vectors: impl Iterator<Item = &'a Vec<f32>>) -> Vec<f32> {
     }
     normalize(&mut sum);
     sum
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A unit vector pointing mostly along `axis`, slightly tilted by `tilt`.
+    fn voice(axis: usize, tilt: usize) -> Sample {
+        let mut vector = vec![0.0; model::EMBEDDING_DIM];
+        vector[axis] = 1.0;
+        vector[10 + tilt] = 0.3;
+        normalize(&mut vector);
+        Sample {
+            vector,
+            speech_seconds: 8.0,
+            source: Source::Microphone,
+        }
+    }
+
+    fn builder(samples: impl IntoIterator<Item = Sample>) -> ProfileBuilder {
+        let mut builder = ProfileBuilder::default();
+        samples.into_iter().for_each(|sample| builder.add(sample));
+        builder
+    }
+
+    #[test]
+    fn too_few_segments_do_not_make_a_profile() {
+        let result = builder((0..4).map(|i| voice(0, i))).build("Alexey");
+        assert!(matches!(
+            result,
+            Err(Error::NotEnoughSpeech {
+                have: 4,
+                need: MIN_EMBEDDINGS
+            })
+        ));
+    }
+
+    #[test]
+    fn segments_of_another_voice_are_dropped() {
+        let own = (0..6).map(|i| voice(0, i));
+        let foreign = (0..2).map(|i| voice(1, i));
+        let builder = builder(own.chain(foreign));
+        assert_eq!(builder.rejected(), 2);
+        assert_eq!(builder.speech_seconds(), 48.0);
+    }
+
+    #[test]
+    fn profile_keeps_at_most_the_maximum_number_of_vectors() {
+        let profile = builder((0..30).map(|i| voice(0, i)))
+            .build("Alexey")
+            .unwrap();
+        assert_eq!(profile.embeddings.len(), MAX_EMBEDDINGS);
+    }
+
+    #[test]
+    fn saved_file_reads_back_and_matches_its_own_voice() {
+        let profile = builder((0..6).map(|i| voice(0, i)))
+            .build("Alexey")
+            .unwrap();
+        let restored = VoiceprintFile::from_json(&profile.to_json()).unwrap();
+
+        assert_eq!(restored.profile.id, profile.profile.id);
+        assert_eq!(restored.centroid.len(), model::EMBEDDING_DIM);
+        let norm = restored.centroid.iter().map(|v| v * v).sum::<f32>().sqrt();
+        assert!((norm - 1.0).abs() < 1e-5);
+        assert!(restored.compare(&voice(0, 0).vector).centroid > 0.9);
+        assert!(restored.compare(&voice(1, 0).vector).centroid < 0.1);
+    }
+
+    #[test]
+    fn file_made_by_another_model_is_refused() {
+        let mut profile = builder((0..6).map(|i| voice(0, i)))
+            .build("Alexey")
+            .unwrap();
+        profile.model.sha256 = "0".repeat(64);
+        assert!(matches!(
+            VoiceprintFile::from_json(&profile.to_json()),
+            Err(Error::InvalidFile(_))
+        ));
+    }
 }

@@ -59,9 +59,10 @@ type CommandResult<T> = Result<T, String>;
 impl Entry {
     fn view(&self) -> ProfileView {
         let (speech_seconds, segments) = match &self.file {
-            Some(file) => {
-                (file.embeddings.iter().map(|s| s.speech_seconds).sum(), file.embeddings.len())
-            }
+            Some(file) => (
+                file.embeddings.iter().map(|s| s.speech_seconds).sum(),
+                file.embeddings.len(),
+            ),
             None => (self.builder.speech_seconds(), self.builder.accepted().len()),
         };
         ProfileView {
@@ -87,7 +88,10 @@ impl App {
         action: impl FnOnce(&mut Entry) -> CommandResult<T>,
     ) -> CommandResult<T> {
         let mut profiles = self.profiles.lock().unwrap();
-        let entry = profiles.iter_mut().find(|e| e.id == id).ok_or("profile not found")?;
+        let entry = profiles
+            .iter_mut()
+            .find(|e| e.id == id)
+            .ok_or("profile not found")?;
         action(entry)
     }
 
@@ -100,7 +104,10 @@ impl App {
         let mut new_samples = Vec::new();
         for chunk in self.engine.chunks(samples).map_err(|e| e.to_string())? {
             new_samples.push(Sample {
-                vector: self.engine.embed(&chunk.samples).map_err(|e| e.to_string())?,
+                vector: self
+                    .engine
+                    .embed(&chunk.samples)
+                    .map_err(|e| e.to_string())?,
                 speech_seconds: chunk.seconds(),
                 source,
             });
@@ -109,13 +116,18 @@ impl App {
             if entry.file.is_some() {
                 return Err("profile is already saved".into());
             }
-            new_samples.into_iter().for_each(|sample| entry.builder.add(sample));
+            new_samples
+                .into_iter()
+                .for_each(|sample| entry.builder.add(sample));
             Ok(())
         })
     }
 
     fn compare(&self, id: &str, samples: &[f32]) -> CommandResult<Match> {
-        let speech = self.engine.speech_only(samples).map_err(|e| e.to_string())?;
+        let speech = self
+            .engine
+            .speech_only(samples)
+            .map_err(|e| e.to_string())?;
         let vector = self.engine.embed(&speech).map_err(|e| e.to_string())?;
         self.with_entry(id, |entry| {
             let file = entry.file.as_ref().ok_or("profile is not saved yet")?;
@@ -124,9 +136,18 @@ impl App {
     }
 
     fn stop_recording(&self) -> CommandResult<Vec<f32>> {
-        let recorder = self.recorder.lock().unwrap().take().ok_or("not recording")?;
+        let recorder = self
+            .recorder
+            .lock()
+            .unwrap()
+            .take()
+            .ok_or("not recording")?;
         let recording = recorder.finish();
-        Ok(audio::interleaved_to_16k(&recording.samples, recording.channels, recording.rate))
+        Ok(audio::interleaved_to_16k(
+            &recording.samples,
+            recording.channels,
+            recording.rate,
+        ))
     }
 
     fn view(&self, id: &str) -> CommandResult<ProfileView> {
@@ -136,7 +157,12 @@ impl App {
 
 #[tauri::command]
 fn list_profiles(app: State<App>) -> Vec<ProfileView> {
-    app.profiles.lock().unwrap().iter().map(Entry::view).collect()
+    app.profiles
+        .lock()
+        .unwrap()
+        .iter()
+        .map(Entry::view)
+        .collect()
 }
 
 #[tauri::command]
@@ -159,7 +185,10 @@ fn create_profile(app: State<App>, name: String) -> CommandResult<ProfileView> {
 #[tauri::command]
 fn delete_profile(app: State<App>, id: String) -> CommandResult<()> {
     let mut profiles = app.profiles.lock().unwrap();
-    let index = profiles.iter().position(|e| e.id == id).ok_or("profile not found")?;
+    let index = profiles
+        .iter()
+        .position(|e| e.id == id)
+        .ok_or("profile not found")?;
     if profiles[index].file.is_some() {
         std::fs::remove_file(app.profile_path(&id)).map_err(|e| e.to_string())?;
     }
@@ -225,8 +254,14 @@ fn verify_file(app: State<App>, id: String, path: String) -> CommandResult<Match
 #[tauri::command]
 fn finish_profile(app: State<App>, id: String) -> CommandResult<ProfileView> {
     let mut profiles = app.profiles.lock().unwrap();
-    let entry = profiles.iter_mut().find(|e| e.id == id).ok_or("profile not found")?;
-    let file = entry.builder.build(&entry.name).map_err(|e| e.to_string())?;
+    let entry = profiles
+        .iter_mut()
+        .find(|e| e.id == id)
+        .ok_or("profile not found")?;
+    let file = entry
+        .builder
+        .build(&entry.name)
+        .map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&app.profiles_dir).map_err(|e| e.to_string())?;
     std::fs::write(app.profile_path(&file.profile.id), file.to_json())
         .map_err(|e| e.to_string())?;

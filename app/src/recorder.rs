@@ -46,9 +46,16 @@ impl Recorder {
             }
         });
 
-        let (channels, rate) =
-            started.recv().map_err(|_| "microphone thread stopped".to_string())??;
-        Ok(Self { captured, channels, rate, stop, thread })
+        let (channels, rate) = started
+            .recv()
+            .map_err(|_| "microphone thread stopped".to_string())??;
+        Ok(Self {
+            captured,
+            channels,
+            rate,
+            stop,
+            thread,
+        })
     }
 
     /// Seconds recorded so far and the peak level since the previous call.
@@ -62,12 +69,18 @@ impl Recorder {
         let _ = self.stop.send(());
         let _ = self.thread.join();
         let samples = std::mem::take(&mut self.captured.lock().unwrap().samples);
-        Recording { samples, channels: self.channels, rate: self.rate }
+        Recording {
+            samples,
+            channels: self.channels,
+            rate: self.rate,
+        }
     }
 }
 
 fn open_stream(sink: Arc<Mutex<Captured>>) -> Result<(Stream, usize, u32), String> {
-    let device = cpal::default_host().default_input_device().ok_or("no microphone found")?;
+    let device = cpal::default_host()
+        .default_input_device()
+        .ok_or("no microphone found")?;
     let config = device.default_input_config().map_err(|e| e.to_string())?;
     let channels = config.channels() as usize;
     let rate = config.sample_rate();

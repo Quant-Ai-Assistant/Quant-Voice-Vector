@@ -51,7 +51,9 @@ impl Engine {
         })
         .ok_or(Error::Engine("speaker embedding model"))?;
         if extractor.dim() as usize != model::EMBEDDING_DIM {
-            return Err(Error::Engine("speaker embedding model: unexpected dimension"));
+            return Err(Error::Engine(
+                "speaker embedding model: unexpected dimension",
+            ));
         }
 
         let vad_config = VadModelConfig {
@@ -72,7 +74,10 @@ impl Engine {
         // Fail early if the VAD model cannot be loaded.
         VoiceActivityDetector::create(&vad_config, 1.0).ok_or(Error::Engine("VAD model"))?;
 
-        Ok(Self { extractor, vad_config })
+        Ok(Self {
+            extractor,
+            vad_config,
+        })
     }
 
     /// Removes silence and noise from mono 16 kHz audio, returning only speech.
@@ -86,7 +91,7 @@ impl Engine {
                 vad.pop();
             }
         };
-        for window in samples.chunks_exact(VAD_WINDOW) {
+        for window in samples.as_chunks::<VAD_WINDOW>().0 {
             vad.accept_waveform(window);
             drain(&vad);
         }
@@ -103,13 +108,18 @@ impl Engine {
         Ok(speech
             .chunks(chunk_len)
             .filter(|c| c.len() >= min_len)
-            .map(|c| SpeechChunk { samples: c.to_vec() })
+            .map(|c| SpeechChunk {
+                samples: c.to_vec(),
+            })
             .collect())
     }
 
     /// Computes the L2-normalized speaker vector of mono 16 kHz speech.
     pub fn embed(&self, samples: &[f32]) -> Result<Vec<f32>> {
-        let stream = self.extractor.create_stream().ok_or(Error::Engine("embedding stream"))?;
+        let stream = self
+            .extractor
+            .create_stream()
+            .ok_or(Error::Engine("embedding stream"))?;
         stream.accept_waveform(SAMPLE_RATE as i32, samples);
         // Quant-Core must call inputFinished() too: without it the last frames are not
         // flushed and the vector differs (cosine ~0.999 instead of 1).
@@ -117,8 +127,10 @@ impl Engine {
         if !self.extractor.is_ready(&stream) {
             return Err(Error::NotEnoughSpeech { have: 0, need: 1 });
         }
-        let mut vector =
-            self.extractor.compute(&stream).ok_or(Error::Engine("embedding computation"))?;
+        let mut vector = self
+            .extractor
+            .compute(&stream)
+            .ok_or(Error::Engine("embedding computation"))?;
         normalize(&mut vector);
         Ok(vector)
     }

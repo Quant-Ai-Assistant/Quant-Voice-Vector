@@ -21,11 +21,18 @@ pub const VAD_MODEL_SHA256: &str =
     "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6";
 
 pub fn sha256_file(path: &Path) -> Result<String> {
-    let io = |source| Error::Io { path: path.to_path_buf(), source };
+    let io = |source| Error::Io {
+        path: path.to_path_buf(),
+        source,
+    };
     let mut file = std::fs::File::open(path).map_err(io)?;
     let mut hasher = Sha256::new();
     std::io::copy(&mut file, &mut hasher).map_err(io)?;
-    Ok(hasher.finalize().iter().map(|b| format!("{b:02x}")).collect())
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect())
 }
 
 /// Returns the path of `file` inside `dir` after checking its checksum.
@@ -33,7 +40,11 @@ pub(crate) fn verified(dir: &Path, file: &str, expected: &'static str) -> Result
     let path = dir.join(file);
     let actual = sha256_file(&path)?;
     if actual != expected {
-        return Err(Error::ModelChecksum { path, expected, actual });
+        return Err(Error::ModelChecksum {
+            path,
+            expected,
+            actual,
+        });
     }
     Ok(path)
 }

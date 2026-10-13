@@ -9,7 +9,8 @@ use qvv_core::{Engine, ProfileBuilder, Sample, Source, VoiceprintFile, audio};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let usage = "usage: qvv enroll <models> <name> <out> <audio>... | verify <models> <profile> <audio>...";
+    let usage =
+        "usage: qvv enroll <models> <name> <out> <audio>... | verify <models> <profile> <audio>...";
     match args.first().map(String::as_str) {
         Some("enroll") if args.len() >= 5 => {
             let engine = Engine::load(Path::new(&args[1]))?;
@@ -32,7 +33,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
             let profile = builder.build(&args[2])?;
             std::fs::write(&args[3], profile.to_json())?;
-            println!("saved {} with {} vectors", args[3], profile.embeddings.len());
+            println!(
+                "saved {} with {} vectors",
+                args[3],
+                profile.embeddings.len()
+            );
         }
         Some("verify") if args.len() >= 4 => {
             let engine = Engine::load(Path::new(&args[1]))?;
